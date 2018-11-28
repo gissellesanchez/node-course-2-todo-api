@@ -5,24 +5,14 @@ const {app} = require('./../server');
 const {Todo} = require('./../models/todo');
 const {ObjectID} = require('mongodb');
 
-const todos = [{
-  _id:new ObjectID(),
-  text:'First test todo'
-},{
-  _id:new ObjectID(),
-  text:'Second test todo',
-  completed:true,
-  completedAt:333
-}];
-beforeEach((done)=>{
-  Todo.remove({}).then(()=>{
-    return Todo.insertMany(todos);
-  }).then(()=>done());
-});
+const {todos,populateTodos,users,populateUsers}=require('./seed/seed');
 
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos',()=>{
   it('should create a new todo',(done)=>{
+
     var text='Test todo text';
     request(app)
       .post('/todos')
@@ -41,7 +31,6 @@ describe('POST /todos',()=>{
           done();
         }).catch((e)=>done(e));
       });
-
   });
 
   it('should not create todo with invalid body data',(done)=>{
@@ -53,13 +42,13 @@ describe('POST /todos',()=>{
         if(err){
           return done(err);
         }
+
         Todo.find().then((todos)=>{
             expect(todos.length).toBe(2);
             done();
         }).catch((e)=>done(e));
       });
   });
-
 });
 
 describe('GET /todos',()=>{
@@ -74,10 +63,8 @@ describe('GET /todos',()=>{
   });
 });
 
-
 describe('GET /todos/:id',()=>{
   it('should return todo doc',(done)=>{
-    console.log(todos);
     request(app)
       .get(`/todos/${todos[0]._id.toHexString()}`)
       .expect(200)
@@ -97,18 +84,17 @@ describe('GET /todos/:id',()=>{
   });
 
   it ('should return 404 for non object ids',(done)=>{
-    //todos/123
     request(app)
       .get('/todos/123abc')
       .expect(404)
       .end(done);
   });
-
 });
 
 describe('DELETE /todos/:id',()=>{
   it('should remove a todo',(done)=>{
     var hexId=todos[1]._id.toHexString();
+
     request(app)
       .delete(`/todos/${hexId}`)
       .expect(200)
@@ -126,6 +112,7 @@ describe('DELETE /todos/:id',()=>{
         }).catch((e)=>done(e));
       });
   });
+
   it('should return 404 if todo not found',(done)=>{
     var hexId=new ObjectID().toHexString();
     request(app)
